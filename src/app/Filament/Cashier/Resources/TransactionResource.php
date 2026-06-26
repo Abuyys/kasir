@@ -50,6 +50,13 @@ class TransactionResource extends Resource
                     ->label('Total Bayar')
                     ->money('IDR')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'success' => 'success',
+                        'cancel' => 'danger',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Tanggal')
                     ->dateTime('d M Y H:i')
@@ -60,10 +67,84 @@ class TransactionResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('print_receipt')
+                    ->label('Struk')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->url(fn ($record) => route('receipt.show', $record))
+                    ->openUrlInNewTab(),
+                Tables\Actions\Action::make('cancel_transaction')
+                    ->label('Batalkan')
+                    ->color('danger')
+                    ->icon('heroicon-o-x-circle')
+                    ->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status === 'success')
+                    ->action(function ($record) {
+                        \DB::transaction(function () use ($record) {
+                            $record->update(['status' => 'cancel']);
+                            
+                            foreach ($record->details as $detail) {
+                                $product = $detail->product;
+                                if ($product) {
+                                    $before = $product->stock;
+                                    $product->increment('stock', $detail->quantity);
+                                    
+                                    \App\Models\StockMovement::create([
+                                        'product_id'   => $product->id,
+                                        'user_id'      => auth()->id(),
+                                        'type'         => 'cancel',
+                                        'qty'          => $detail->quantity,
+                                        'before_stock' => $before,
+                                        'after_stock'  => $product->stock,
+                                        'notes'        => 'Pembatalan transaksi - ' . $record->transaction_code,
+                                    ]);
+                                }
+                            }
+                        });
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Transaksi berhasil dibatalkan')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('refund_transaction')
+                    ->label('Refund')
+                    ->color('warning')
+                    ->icon('heroicon-o-arrow-path')
+                    ->requiresConfirmation()
+                    ->visible(fn ($record) => $record->status === 'success')
+                    ->action(function ($record) {
+                        \DB::transaction(function () use ($record) {
+                            $record->update(['status' => 'refund']);
+                            
+                            foreach ($record->details as $detail) {
+                                $product = $detail->product;
+                                if ($product) {
+                                    $before = $product->stock;
+                                    $product->increment('stock', $detail->quantity);
+                                    
+                                    \App\Models\StockMovement::create([
+                                        'product_id'   => $product->id,
+                                        'user_id'      => auth()->id(),
+                                        'type'         => 'refund',
+                                        'qty'          => $detail->quantity,
+                                        'before_stock' => $before,
+                                        'after_stock'  => $product->stock,
+                                        'notes'        => 'Refund transaksi - ' . $record->transaction_code,
+                                    ]);
+                                }
+                            }
+                        });
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Transaksi berhasil direfund')
+                            ->success()
+                            ->send();
+                    })
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

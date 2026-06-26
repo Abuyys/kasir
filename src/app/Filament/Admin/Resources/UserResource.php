@@ -80,9 +80,21 @@ class UserResource extends Resource
                             ->required(fn (string $context): bool => $context === 'create')
                             ->columnSpan(1)
                             ->password(),
+                        
+                        Forms\Components\Select::make('role')
+                            ->options([
+                                'owner' => 'Owner',
+                                'cashier' => 'Cashier',
+                            ])
+                            ->required()
+                            ->default('cashier'),
+                        
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Active Status')
+                            ->default(true),
                     ]),
 
-                Forms\Components\Section::make('Roles')
+                Forms\Components\Section::make('Roles (Spatie Shield)')
                     ->schema([
                         Forms\Components\Select::make('roles')
                             ->required()
@@ -90,7 +102,8 @@ class UserResource extends Resource
                             ->relationship('roles', 'name')
                             ->label('Roles'),
                     ])
-                    ->columns(1),
+                    ->columns(1)
+                    ->collapsed(),
 
             ]);
     }
@@ -112,10 +125,16 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('roles.name')
+                Tables\Columns\TextColumn::make('role')
                     ->badge()
-                    ->sortable()
-                    ->searchable(),
+                    ->color(fn (string $state): string => match ($state) {
+                        'owner' => 'warning',
+                        'cashier' => 'success',
+                        default => 'gray',
+                    }),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->boolean()
+                    ->label('Active'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->date()
                     ->sortable()

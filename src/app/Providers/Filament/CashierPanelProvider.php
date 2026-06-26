@@ -26,6 +26,7 @@ class CashierPanelProvider extends PanelProvider
             ->id('cashier')
             ->path('cashier')
             ->login()
+            ->profile(\App\Filament\Pages\Auth\EditProfile::class, isSimple: false)
             ->colors([
                 'primary' => Color::Amber,
             ])

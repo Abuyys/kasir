@@ -41,6 +41,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(MaxWidth::SevenExtraLarge)
             ->sidebarCollapsibleOnDesktop()
+            ->databaseNotifications()
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
             ->pages([
@@ -50,6 +51,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
                 \Awcodes\Overlook\Widgets\OverlookWidget::class,
+                \App\Filament\Admin\Widgets\ShopOverview::class,
+                \App\Filament\Admin\Widgets\SalesChart::class,
+                \App\Filament\Admin\Widgets\BestSeller::class,
+                \App\Filament\Admin\Widgets\RecentTransactions::class,
+                \App\Filament\Admin\Widgets\LowStockProducts::class,
             ])
             ->navigationGroups([
                 NavigationGroup::make()

@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Http\Responses;
+
+use Filament\Facades\Filament;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
+use Illuminate\Http\RedirectResponse;
+
+class LogoutResponse implements LogoutResponseContract
+{
+    public function toResponse($request): RedirectResponse
+    {
+        if (Filament::getCurrentPanel()?->getId() === 'cashier') {
+            return redirect('/');
+        }
+
+        return redirect()->to(
+            Filament::hasLogin() ? Filament::getLoginUrl() : Filament::getUrl(),
+        );
+    }
+}
